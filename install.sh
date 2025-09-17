@@ -1,145 +1,76 @@
 #!/bin/bash
 
-# NetworkMind Cognee VM Setup Script
-# One-command installation for fresh Ubuntu VMs
-# This script handles everything: installs Docker, prompts for config, and launches Cognee
+# Exit on any error
+set -e
 
-set -e  # Exit on any error
+echo "🔧 Installing Docker..."
+# Update package list
+sudo apt-get update -qq
 
-echo "🚀 Starting NetworkMind Cognee VM Setup..."
-echo ""
+# Install prerequisites
+sudo apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release jq
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if running as root or with sudo
-if [[ $EUID -eq 0 ]]; then
-    print_warning "Running as root - this is fine, but note that docker group changes won't apply"
-fi
-
-print_status "🔧 Installing Docker and dependencies..."
-
-# Update system
-sudo apt-get update
-
-# Install required dependencies
-sudo apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release \
-    jq
-
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo rm get-docker.sh
-
-# Start and enable Docker
-sudo systemctl start docker
-sudo systemctl enable docker
-
-print_status "🐳 Docker installed successfully!"
-
-print_status "📦 Installing docker-compose..."
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-print_status "☁️ Installing AWS CLI (optional)..."
-sudo apt-get install -y awscli || print_warning "AWS CLI installation failed - optional dependency"
-
-print_status "🔍 Installing monitoring tools..."
-sudo apt-get install -y htop curl wget
-
-print_status "🌐 Opening firewall port 8000 for Cognee..."
-if command -v ufw >/dev/null 2>&1; then
-    sudo ufw allow 8000/tcp
+# Install Docker if not already installed
+if ! command -v docker &> /dev/null; then
+    curl -fsSL https://get.docker.com | sh
+    sudo systemctl enable docker
+    sudo systemctl start docker
+    
+    # Add current user to docker group
+    sudo usermod -aG docker $USER
+    echo "🐳 Docker installed successfully!"
 else
-    print_warning "UFW not available - firewall rules may need manual setup"
+    echo "🐳 Docker already installed!"
 fi
 
-print_status "✅ Base installation complete!"
-echo ""
+echo "📦 Installing docker-compose..."
+# Install docker-compose if not already installed
+if ! command -v docker-compose &> /dev/null; then
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+fi
 
-print_status "🔧 Configuring Cognee environment..."
+echo "☁️ Installing AWS CLI (for ECR if needed)..."
+sudo apt-get install -y -qq awscli
 
-# Check if .env already exists
-if [ -f ".env" ]; then
-    print_warning ".env file already exists - using existing configuration"
+echo "🔍 Installing monitoring tools..."
+sudo apt-get install -y -qq htop curl wget
+
+echo "🌐 Installing and configuring firewall for Cognee..."
+# Install ufw if not present
+if ! command -v ufw &> /dev/null; then
+    echo "Installing ufw..."
+    sudo apt-get install -y -qq ufw
+fi
+
+# Configure firewall
+sudo ufw --force enable
+sudo ufw allow ssh
+sudo ufw allow 8000/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+echo "🔥 Starting Cognee services..."
+# Build and start the containers
+docker-compose up --build -d
+
+# Wait for services to start
+echo "⏳ Waiting for services to start..."
+sleep 30
+
+# Check health
+echo "🩺 Checking service health..."
+if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+    echo "✅ Cognee is running successfully!"
+    echo "🌐 Access your application at: http://$(curl -s ifconfig.me):8000"
 else
-    print_status "Creating .env file..."
-
-    # Prompt for QDrant configuration
-    echo -e "${YELLOW}Please provide your QDrant configuration:${NC}"
-    echo -n "QDrant URL (e.g., https://xyz-abc.cloud.qdrant.io:6333): "
-    read -r qdrant_url
-
-    echo -n "QDrant API Key: "
-    read -r -s qdrant_key
-    echo ""  # New line after hidden input
-
-    # Validate input
-    if [ -z "$qdrant_url" ] || [ -z "$qdrant_key" ]; then
-        print_error "Both QDrant URL and API Key are required!"
-        exit 1
-    fi
-
-    # Create .env file
-    cat > .env << EOF
-# Cognee Environment Configuration
-QDRANT_URL=$qdrant_url
-QDRANT_API_KEY=$qdrant_key
-EOF
-
-    print_status ".env file created successfully"
+    echo "⚠️  Service may still be starting. Check with: docker-compose logs"
 fi
 
-echo ""
-print_status "🚀 Launching Cognee with Docker Compose..."
-
-# Add current user to docker group (optional, but try it)
-sudo usermod -aG docker $USER || print_warning "Could not add user to docker group"
-
-# Launch Cognee
-docker-compose up -d
-
-print_status "⏳ Waiting for Cognee to start up..."
-sleep 10
-
-print_status "🏥 Running health check..."
-if curl -f -s http://localhost:8000/health > /dev/null; then
-    print_status "✅ Cognee is running and healthy!"
-    print_status "🌐 Cognee API is available at: http://localhost:8000"
-else
-    print_error "❌ Health check failed - Cognee may not have started properly"
-    print_status "Check logs with: docker-compose logs"
-    exit 1
-fi
-
-echo ""
-echo -e "${GREEN}🎉 Setup complete!${NC}"
+echo "🎉 Installation complete!"
 echo ""
 echo "Useful commands:"
-echo "  • View logs: docker-compose logs -f"
-echo "  • Restart: docker-compose restart"
-echo "  • Stop: docker-compose down"
-echo "  • Health check: curl http://localhost:8000/health"
-echo ""
-print_warning "Remember to logout/login if you want docker commands without sudo"
+echo "  Check status: docker-compose ps"
+echo "  View logs:    docker-compose logs -f"
+echo "  Stop:         docker-compose down"
+echo "  Restart:      docker-compose restart"
