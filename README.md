@@ -75,6 +75,17 @@ Ensure you're connected and have sudo access before proceeding.
    chmod +x install.sh
    ./install.sh
    ```
+   **If directory exists from previous attempt, remove it first:**
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y git
+   rm -rf cognee-to-gcp-vm
+   git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
+   cd cognee-to-gcp-vm
+   chmod +x install.sh
+   ./install.sh
+   ```
+
    The script will:
    - Install Docker and dependencies
    - Prompt for QDrant URL and API key
