@@ -64,8 +64,10 @@ ssh user@vm-ip-address
 
 Ensure you're connected and have sudo access before proceeding.
 
-3. **Clone and run**
+3. **Install Git and clone repository**
    ```bash
+   sudo apt-get update
+   sudo apt-get install -y git
    git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
    cd vm-setup
    chmod +x install.sh
