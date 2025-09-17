@@ -16,20 +16,53 @@ A complete, automated setup for deploying [Cognee](https://github.com/topoterete
 
 Perfect for fresh VMs - no manual configuration needed!
 
-1. **Provision a fresh Ubuntu VM** (20.04 LTS or later)
-   ```bash
-   # Example with Google Cloud (other clouds work too)
-   gcloud compute instances create cognee-vm \
-     --zone=us-central1-a \
-     --machine-type=e2-micro \
-     --image-family=ubuntu-2204-lts \
-     --boot-disk-size=30GB
-   ```
+#### 1. Provision a fresh Ubuntu VM (20.04 LTS or later)
+```bash
+# Example with Google Cloud (other clouds work too)
+gcloud compute instances create cognee-vm \
+  --zone=us-central1-a \
+  --machine-type=e2-micro \
+  --image-family=ubuntu-2204-lts \
+  --boot-disk-size=30GB \
+  --tags=cognee
 
-2. **SSH into your VM**
-   ```bash
-   gcloud compute ssh cognee-vm
-   ```
+# For AWS EC2
+aws ec2 run-instances \
+  --image-id ami-0c7217cdde317cfec \
+  --instance-type t3.micro \
+  --key-name your-ssh-key \
+  --security-groups default
+
+# For DigitalOcean - create Ubuntu droplet via web interface
+```
+
+#### 2. Connect to Your VM
+**SSH into your VM** using the connection method for your cloud provider:
+
+**Google Cloud:**
+```bash
+gcloud compute ssh cognee-vm --zone=us-central1-a
+```
+
+**AWS EC2:**
+```bash
+ssh -i your-ssh-key.pem ubuntu@<your-instance-public-ip>
+```
+
+**DigitalOcean:**
+```bash
+ssh root@<your-droplet-ip>
+```
+
+**Generic SSH:**
+```bash
+ssh user@vm-ip-address
+# Or with key: ssh -i ~/.ssh/your-key user@vm-ip-address
+```
+
+**Windows Users:** Use PuTTY, WSL, or PowerShell with `ssh user@vm-ip`.
+
+Ensure you're connected and have sudo access before proceeding.
 
 3. **Clone and run**
    ```bash
