@@ -68,6 +68,8 @@ Ensure you're connected and have sudo access before proceeding.
    ```bash
    sudo apt-get update
    sudo apt-get install -y git
+   # If directory exists from previous attempt, remove it first:
+   # rm -rf cognee-to-gcp-vm
    git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
    cd cognee-to-gcp-vm
    chmod +x install.sh
