@@ -1,0 +1,26 @@
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Docker volumes and data
+cognee_data/
+data/
+
+# Docker overrides
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
