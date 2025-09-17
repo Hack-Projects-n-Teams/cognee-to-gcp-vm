@@ -86,12 +86,17 @@ Ensure you're connected and have sudo access before proceeding.
    ./install.sh
    ```
 
+   ❗ **BE READY TO PROVIDE QDRANT CREDENTIALS WHEN PROMPTED!**
+
    The script will:
    - Install Docker and dependencies
-   - Prompt for QDrant URL and API key
+   - **Prompt you for QDrant URL (example: https://xyz-abc.cloud.qdrant.io:6333)**
+   - **Prompt you for QDrant API Key (input will be hidden)**
    - Create the environment file
    - Launch Cognee
    - Verify it's working
+
+   🔑 Get your QDrant credentials from your QDrant Cloud dashboard before running!
 
 4. **Done!** Cognee will be running at `http://localhost:8000`
 
