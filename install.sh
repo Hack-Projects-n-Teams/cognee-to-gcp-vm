@@ -69,7 +69,11 @@ print_status "🔍 Installing monitoring tools..."
 sudo apt-get install -y htop curl wget
 
 print_status "🌐 Opening firewall port 8000 for Cognee..."
-sudo ufw allow 8000/tcp || print_warning "UFW not available - firewall rules may need manual setup"
+if command -v ufw >/dev/null 2>&1; then
+    sudo ufw allow 8000/tcp
+else
+    print_warning "UFW not available - firewall rules may need manual setup"
+fi
 
 print_status "✅ Base installation complete!"
 echo ""
