@@ -66,7 +66,7 @@ Ensure you're connected and have sudo access before proceeding.
 
 3. **Clone and run**
    ```bash
-   git clone <your-github-repo-url>
+   git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
    cd vm-setup
    chmod +x install.sh
    ./install.sh
