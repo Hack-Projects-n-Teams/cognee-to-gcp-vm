@@ -3,6 +3,34 @@
 # Exit on any error
 set -e
 
+# Function to collect environment variables
+collect_env_vars() {
+    echo "🔧 Setting up environment variables..."
+    
+    # Create .env file
+    cat > .env << EOF
+# Qdrant Configuration
+QDRANT_URL=
+QDRANT_API_KEY=
+
+# Other configurations (add as needed)
+DEBUG=false
+LOG_LEVEL=info
+EOF
+
+    echo "📝 Please provide your Qdrant credentials:"
+    
+    read -p "Enter your Qdrant URL (e.g., https://your-cluster.qdrant.tech): " qdrant_url
+    read -s -p "Enter your Qdrant API Key: " qdrant_api_key
+    echo ""
+    
+    # Update .env file
+    sed -i "s|QDRANT_URL=|QDRANT_URL=$qdrant_url|" .env
+    sed -i "s|QDRANT_API_KEY=|QDRANT_API_KEY=$qdrant_api_key|" .env
+    
+    echo "✅ Environment variables configured!"
+}
+
 echo "🔧 Installing Docker..."
 # Update package list
 sudo apt-get update -qq
@@ -50,9 +78,22 @@ sudo ufw allow 8000/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
+# Collect environment variables first
+collect_env_vars
+
 echo "🔥 Starting Cognee services..."
-# Build and start the containers
-docker-compose up --build -d
+# Add user to docker group if not already
+if ! groups $USER | grep -q '\bdocker\b'; then
+    sudo usermod -aG docker $USER
+    echo "🐳 Added $USER to docker group"
+fi
+
+# Start docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Build and start the containers with sudo temporarily
+sudo docker-compose up --build -d
 
 # Wait for services to start
 echo "⏳ Waiting for services to start..."
