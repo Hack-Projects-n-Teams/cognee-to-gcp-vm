@@ -69,7 +69,7 @@ Ensure you're connected and have sudo access before proceeding.
    sudo apt-get update
    sudo apt-get install -y git
    git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
-   cd vm-setup
+   cd cognee-to-gcp-vm
    chmod +x install.sh
    ./install.sh
    ```
