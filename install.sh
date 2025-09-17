@@ -3,34 +3,6 @@
 # Exit on any error
 set -e
 
-# Function to collect environment variables
-collect_env_vars() {
-    echo "🔧 Setting up environment variables..."
-    
-    # Create .env file
-    cat > .env << EOF
-# Qdrant Configuration
-QDRANT_URL=
-QDRANT_API_KEY=
-
-# Other configurations (add as needed)
-DEBUG=false
-LOG_LEVEL=info
-EOF
-
-    echo "📝 Please provide your Qdrant credentials:"
-    
-    read -p "Enter your Qdrant URL (e.g., https://your-cluster.qdrant.tech): " qdrant_url
-    read -s -p "Enter your Qdrant API Key: " qdrant_api_key
-    echo ""
-    
-    # Update .env file
-    sed -i "s|QDRANT_URL=|QDRANT_URL=$qdrant_url|" .env
-    sed -i "s|QDRANT_API_KEY=|QDRANT_API_KEY=$qdrant_api_key|" .env
-    
-    echo "✅ Environment variables configured!"
-}
-
 echo "🔧 Installing Docker..."
 # Update package list
 sudo apt-get update -qq
@@ -78,10 +50,26 @@ sudo ufw allow 8000/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Collect environment variables first
-collect_env_vars
+echo "🔧 Setting up environment variables..."
 
-echo "🔥 Starting Cognee services..."
+# Prompt for Qdrant credentials
+read -p "Enter your Qdrant URL (e.g., https://your-cluster.qdrant.tech): " qdrant_url
+read -s -p "Enter your Qdrant API Key: " qdrant_api_key
+echo ""
+
+# Create .env file
+cat > .env << EOF
+# Qdrant Configuration
+QDRANT_URL=$qdrant_url
+QDRANT_API_KEY=$qdrant_api_key
+
+# Other configurations
+DEBUG=false
+LOG_LEVEL=info
+EOF
+
+echo "✅ Environment variables configured!"
+
 # Add user to docker group if not already
 if ! groups $USER | grep -q '\bdocker\b'; then
     sudo usermod -aG docker $USER
@@ -92,8 +80,11 @@ fi
 sudo systemctl start docker
 sudo systemctl enable docker
 
-# Build and start the containers with sudo temporarily
-sudo docker-compose up --build -d
+echo "🔥 Starting Cognee services..."
+# Use newgrp to apply group changes immediately and run docker-compose
+newgrp docker << COMMANDS
+docker-compose up --build -d
+COMMANDS
 
 # Wait for services to start
 echo "⏳ Waiting for services to start..."
@@ -103,15 +94,11 @@ sleep 30
 echo "🩺 Checking service health..."
 if curl -f http://localhost:8000/health > /dev/null 2>&1; then
     echo "✅ Cognee is running successfully!"
-    echo "🌐 Access your application at: http://$(curl -s ifconfig.me):8000"
+    echo "🌐 Access your application at: http://\$(curl -s ifconfig.me):8000"
 else
     echo "⚠️  Service may still be starting. Check with: docker-compose logs"
 fi
 
 echo "🎉 Installation complete!"
 echo ""
-echo "Useful commands:"
-echo "  Check status: docker-compose ps"
-echo "  View logs:    docker-compose logs -f"
-echo "  Stop:         docker-compose down"
-echo "  Restart:      docker-compose restart"
+echo "One-line restart: docker-compose restart && sleep 10 && curl http://localhost:8000/health"

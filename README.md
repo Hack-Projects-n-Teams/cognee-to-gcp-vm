@@ -1,258 +1,67 @@
-# Cognee VM Setup
+# Cognee GCP VM Setup
 
-A complete, automated setup for deploying [Cognee](https://github.com/topoteretes/cognee) on any Ubuntu virtual machine. This repo provides everything needed for a one-command installation.
+Deploy Cognee to a fresh GCP VM with one command.
 
-## Features
-
-- 🚀 **One-command setup**: `./install.sh` handles everything automatically
-- 🤖 **Interactive configuration**: Prompts for QDrant credentials if needed
-- ✅ **Health verification**: Automatic startup and health checks
-- 📦 **Complete package**: Docker, docker-compose, monitoring tools
-- 🔒 **Security**: Firewall configuration and proper environment handling
-
-## Quick Start
-
-### Self-Install (Recommended)
-
-Perfect for fresh VMs - no manual configuration needed!
-
-#### 1. Provision a fresh Ubuntu VM (20.04 LTS or later)
-```bash
-# Example with Google Cloud (other clouds work too)
-gcloud compute instances create cognee-vm \
-  --zone=us-central1-a \
-  --machine-type=e2-micro \
-  --image-family=ubuntu-2204-lts \
-  --boot-disk-size=30GB \
-  --tags=cognee
-
-# For AWS EC2
-aws ec2 run-instances \
-  --image-id ami-0c7217cdde317cfec \
-  --instance-type t3.micro \
-  --key-name your-ssh-key \
-  --security-groups default
-
-# For DigitalOcean - create Ubuntu droplet via web interface
-```
-
-#### 2. Connect to Your VM
-**SSH into your VM** using the connection method for your cloud provider:
-
-**Google Cloud:**
-```bash
-gcloud compute ssh cognee-vm --zone=us-central1-a
-```
-
-**AWS EC2:**
-```bash
-ssh -i your-ssh-key.pem ubuntu@<your-instance-public-ip>
-```
-
-**DigitalOcean:**
-```bash
-ssh root@<your-droplet-ip>
-```
-
-**Generic SSH:**
-```bash
-ssh user@vm-ip-address
-# Or with key: ssh -i ~/.ssh/your-key user@vm-ip-address
-```
-
-**Windows Users:** Use PuTTY, WSL, or PowerShell with `ssh user@vm-ip`.
-
-Ensure you're connected and have sudo access before proceeding.
-
-3. **Install Git and clone repository**
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y git
-   # If directory exists from previous attempt, remove it first:
-   # rm -rf cognee-to-gcp-vm
-   git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
-   cd cognee-to-gcp-vm
-   chmod +x install.sh
-   ./install.sh
-   ```
-   **If directory exists from previous attempt, remove it first:**
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y git
-   rm -rf cognee-to-gcp-vm
-   git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
-   cd cognee-to-gcp-vm
-   chmod +x install.sh
-   ./install.sh
-   ```
-
-   ❗ **BE READY TO PROVIDE QDRANT CREDENTIALS WHEN PROMPTED!**
-
-   The script will:
-   - Install Docker and dependencies
-   - **Prompt you for QDrant URL (example: https://xyz-abc.cloud.qdrant.io:6333)**
-   - **Prompt you for QDrant API Key (input will be hidden)**
-   - Create the environment file
-   - Launch Cognee
-   - Verify it's working
-
-   🔑 Get your QDrant credentials from your QDrant Cloud dashboard before running!
-
-4. **Done!** Cognee will be running at `http://localhost:8000`
-
-### Manual Setup
-
-If you prefer manual control:
-
-1. **Install dependencies**
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y docker.io docker-compose jq htop curl wget
-   sudo systemctl start docker
-   sudo systemctl enable docker
-   ```
-
-2. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your QDrant credentials
-   ```
-
-3. **Launch**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Verify**
-   ```bash
-   curl http://localhost:8000/health
-   ```
-
-## Prerequisites
-
-- Ubuntu 20.04 LTS or later (tested on 22.04)
-- Fresh VM with sudo access (not required but recommended)
-- QDrant instance (Cloud or self-hosted)
-
-### QDrant Setup
-
-You'll need a QDrant vector database. Options:
-
-- **QDrant Cloud** (easier): https://cloud.qdrant.io
-- **Self-hosted**: Docker setup available at https://qdrant.tech/documentation/quick-start/
-
-## Environment Configuration
-
-Copy `.env.example` to `.env` and configure:
-
-```env
-QDRANT_URL=https://your-qdrant-instance-url:6333
-QDRANT_API_KEY=your-qdrant-api-key
-```
-
-The install script will prompt for these if the file doesn't exist.
-
-## Cloud Provider Examples
-
-### Google Cloud Platform (GCP)
-```bash
-gcloud compute instances create cognee-instance \
-  --zone=us-central1-a \
-  --machine-type=e2-micro \
-  --image-family=ubuntu-2204-lts \
-  --boot-disk-size=30GB \
-  --tags=cognee
-```
-
-### AWS EC2
-```bash
-aws ec2 run-instances \
-  --image-id ami-0c7217cdde317cfec \
-  --instance-type t3.micro \
-  --key-name your-key \
-  --security-groups cognee-sg
-```
-
-### DigitalOcean
-Use the Ubuntu droplet, then run the install script.
-
-## Operations
-
-Once running, useful commands:
+## Quick Install
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/Hack-Projects-n-Teams/cognee-to-gcp-vm/master/quick-install.sh | bash
+```
+
+**What it does:**
+- Installs Docker + dependencies
+- Configures firewall (ports 8000, 80, 443)
+- Prompts for Qdrant credentials
+- Starts Cognee services
+- Tests health endpoint
+
+## Manual Install
+
+```bash
+git clone https://github.com/Hack-Projects-n-Teams/cognee-to-gcp-vm.git
+cd cognee-to-gcp-vm
+chmod +x install.sh
+./install.sh
+```
+
+## Post-Install Commands
+
+```bash
+# Check status
+docker-compose ps
+
 # View logs
 docker-compose logs -f
 
-# Restart Cognee
-docker-compose restart
+# Restart services
+docker-compose restart && sleep 10 && curl http://localhost:8000/health
 
-# Stop everything
+# Stop services
 docker-compose down
-
-# Check health
-curl http://localhost:8000/health
 ```
 
-## Volume Management
+## Environment Variables
 
-Data persists in Docker volume `cognee_data`:
+The installer will prompt for:
+- `QDRANT_URL`: Your Qdrant cluster URL
+- `QDRANT_API_KEY`: Your Qdrant API key
 
-```bash
-# List volumes
-docker volume ls
+## Access
 
-# Inspect
-docker volume inspect cognee_data
-
-# Backup (optional)
-docker run --rm -v cognee_data:/data -v $(pwd):/backup alpine tar czf /backup/cognee-backup.tar.gz -C /data .
-```
-
-## Architecture
-
-- **Cognee**: Main application container (port 8000)
-- **QDrant**: External vector database
-- **Docker Compose**: Orchestration
-- **Persistent Volumes**: Data storage
-
-## Cost Optimization
-
-Recommended instance types:
-- **Free tier VMs**: Perfect for testing (e2-micro, t3.micro)
-- **Small production**: e2-small ($5/month), t3.small ($9/month)
-- **Scale**: Auto-scaling groups for high traffic
+- Local: `http://localhost:8000`
+- External: `http://YOUR_VM_PUBLIC_IP:8000`
+- Health check: `curl http://localhost:8000/health`
 
 ## Troubleshooting
 
-### Common Issues
-
-**1. Docker permission denied**
+If services don't start:
 ```bash
-sudo usermod -aG docker $USER
-# Logout and login again
+# Check logs
+docker-compose logs
+
+# Restart with verbose output
+docker-compose up --build
+
+# Check ports
+sudo netstat -tlnp | grep 8000
 ```
-
-**2. Port 8000 already in use**
-```bash
-sudo netstat -tulpn | grep :8000
-# Or change port in docker-compose.yml
-```
-
-**3. Health check fails**
-```bash
-docker-compose logs cognee
-# Check QDrant connectivity and credentials
-```
-
-**4. Firewall issues**
-```bash
-sudo ufw status
-sudo ufw allow 8000/tcp
-```
-
-### Support
-
-- [Cognee Documentation](https://cognics.github.io/cognee/)
-- [QDrant Documentation](https://qdrant.tech/documentation/)
-- [Docker Troubleshooting](https://docs.docker.com/engine/troubleshoot/)
